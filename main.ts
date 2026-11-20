@@ -1,13 +1,17 @@
-// Entrypoint: copies the rendered page into the output directory.
-// The source sits next to this file, so resolve it from import.meta.url
-// rather than the working directory, and honour MAKEFUN_OUTPUT_DIR
-// when the venue overrides the default "/output" drop point.
-
-import { copyFile, mkdir } from "node:fs/promises";
+import { copyFileSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const out = process.env.MAKEFUN_OUTPUT_DIR ?? "/output";
-const source = new URL("./entry.png", import.meta.url);
+const sourcePath = fileURLToPath(new URL("./entry.png", import.meta.url));
+const outputDirectory = process.env.MAKEFUN_OUTPUT_DIR ?? "/output";
 
-await mkdir(out, { recursive: true });
-await copyFile(source, join(out, "entry.png"));
+if (!existsSync(sourcePath)) {
+  console.error("entry.png is missing next to main.ts");
+  process.exit(1);
+}
+
+if (!existsSync(outputDirectory)) {
+  mkdirSync(outputDirectory, { recursive: true });
+}
+
+copyFileSync(sourcePath, join(outputDirectory, "entry.png"));

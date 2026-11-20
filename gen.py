@@ -14,12 +14,12 @@ from pathlib import Path
 from PIL import ImageFont
 
 W = H = 1024
-PAPER = "#f4efe2"
-INK = "#161616"
+PAPER = "#F7F4EE"
+INK = "#141414"
 ACC = "#7a1f1f"
 GREY = "#7d7668"
-DECK = "#3a3a3a"
-RULE = "#c9c2b2"
+DECK = "#333333"
+RULE = "#C9C2B4"
 WHITE = "#ffffff"
 
 REGION_COL = {
@@ -27,6 +27,7 @@ REGION_COL = {
     "Americas": "#4a6b3a", "Africa": "#7a4a6b", "Oceania": "#2f6b6b",
     "Global": "#4a4a55",
 }
+SERIF = "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"
 SERIF_B = "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf"
 SANS = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 SANS_B = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
@@ -115,7 +116,7 @@ class SVG:
                  f'stroke="{col}" stroke-width="{sw}"{d}/>')
 
     def hair(self, y, x1=40, x2=984):
-        self.line(x1, y, x2, y, INK, 1)
+        self.line(x1, y, x2, y, RULE, 1)
 
     def path(self, d, fill="none", stroke=None, sw=1, dash=None, extra=""):
         s = f' stroke="{stroke}" stroke-width="{sw}"' if stroke else ""
@@ -139,7 +140,7 @@ class SVG:
 
     def serif(self, x, y, s, size, fill=INK, weight=True, what="serif", box=None):
         if box:
-            check(s, SERIF_B if weight else "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf", size, box, what)
+            check(s, SERIF_B if weight else SERIF, size, box, what)
         fw = ' font-weight="bold"' if weight else ""
         self.raw(f'<text x="{x:.2f}" y="{y:.2f}" font-family="DejaVu Serif" font-size="{size}" '
                  f'fill="{fill}"{fw}>{esc(s)}</text>')
@@ -566,7 +567,7 @@ def build():
         lines = wrap(head, SERIF_B, 23, 300, 3, f"lead head {i+1}")
         for k, ln in enumerate(lines):
             svg.serif(x, rect_y + 33 + k * 24, ln, 23, box=300, what=f"lead head {i+1}")
-        dl = wrap(deck, SANS, 9.0, 300, 2, f"lead deck {i+1}")
+        dl = wrap(deck, SERIF, 9.0, 300, 2, f"lead deck {i+1}")
         src = LEAD_SOURCE[i]
         check(src, SANS, 8.2, 306, f"lead source {i+1}")
         # Every lead reserves space for a 3-line head and a 2-line deck so the
@@ -574,7 +575,7 @@ def build():
         deck_top = rect_y + 33 + 2 * 24 + 10
         source_y = deck_top + 11.5 + 13
         for k, ln in enumerate(dl):
-            svg.text(x, deck_top + k * 11.5, ln, SANS, 9.0, DECK, what=f"lead deck {i+1}")
+            svg.serif(x, deck_top + k * 11.5, ln, 9.0, DECK, weight=False, what=f"lead deck {i+1}", box=300)
         svg.text(x, source_y, src, SANS, 8.2, GREY, what=f"lead source {i+1}")
 
     # Cards

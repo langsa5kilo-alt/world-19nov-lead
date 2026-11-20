@@ -47,6 +47,8 @@ def tw(text, path, size):
 
 
 WORST = []  # (ratio, what)
+TEXT_BOXES = []  # (right edge, permitted right edge, what)
+HEADLINE_SIZES = []
 
 
 def check(text, path, size, box, what, record=True):
@@ -90,6 +92,13 @@ def wrap(text, path, size, box, max_lines, what):
     for ln in lines:
         check(ln, path, size, box, what)
     return lines
+
+
+def text_box(x, width, what, right=984):
+    """Register the actual layout box, not merely the measured glyph width."""
+    edge = x + width
+    TEXT_BOXES.append((edge, right, what))
+    assert edge <= right + 1e-9, f"TEXT BOX OVERFLOW {what!r}: {edge:.2f} > {right}"
 
 
 def esc(s):
@@ -352,9 +361,10 @@ def band_lead(svg, x, y, w, h, idx):
     svg.raw('</g>')
 
 
-def card_scene(svg, x, y, w, h, idx):
+def card_scene(svg, x, y, w, h, idx, clip_idx=None):
     rc = REGION_COL[CARDS[idx][0]]
-    svg.raw(f'<g clip-path="url(#card_clip{idx})">')
+    clip_idx = idx if clip_idx is None else clip_idx
+    svg.raw(f'<g clip-path="url(#card_clip{clip_idx})">')
     svg.rect(x, y, w, h, PAPER)
     if idx == 0:  # gavel over Myanmar
         svg.rect(x, y, w, h, "#ece5d6")
@@ -494,13 +504,13 @@ def build():
     svg.raw(f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" '
             f'viewBox="0 0 {W} {H}">')
     svg.raw('<defs>')
-    lead_geo = [(40, 180), (359, 180), (678, 180)]
-    cards_geo = [(40, 412), (229, 412), (418, 412), (607, 412), (796, 412),
-                 (40, 514), (229, 514), (418, 514), (607, 514), (796, 514)]
-    for i, (x, y) in enumerate(lead_geo):
-        svg.raw(f'<clipPath id="lead_clip{i}"><rect x="{x}" y="{y}" width="306" height="120"/></clipPath>')
+    lead_geo = [(40, 180)]
+    card_gap = 9
+    card_w = (944 - 5 * card_gap) / 6
+    cards_geo = [(40 + c * (card_w + card_gap), y) for y in (412, 514) for c in range(6)]
+    svg.raw('<clipPath id="lead_clip0"><rect x="40" y="180" width="400" height="220"/></clipPath>')
     for i, (x, y) in enumerate(cards_geo):
-        svg.raw(f'<clipPath id="card_clip{i}"><rect x="{x}" y="{y}" width="180" height="58"/></clipPath>')
+        svg.raw(f'<clipPath id="card_clip{i}"><rect x="{x}" y="{y}" width="{card_w:.2f}" height="58"/></clipPath>')
     svg.raw('<clipPath id="map_clip"><rect x="40" y="620" width="300" height="100"/></clipPath>')
     svg.raw('</defs>')
     svg.rect(0, 0, W, H, PAPER)
@@ -553,44 +563,67 @@ def build():
         tx += tw(lab, SANS, 9.6)
         assert tx <= 984, f"ticker overruns: {tx}"
 
-    # Leads
-    for i, (x, y) in enumerate(lead_geo):
-        region, field, kicker, head, deck, scene = LEADS[i]
-        rc = REGION_COL[region]
-        band_lead(svg, x, y, 306, 120, i)
-        svg.raw(f'<g clip-path="url(#lead_clip{i})"><rect x="{x}" y="{y}" width="306" height="120" fill="{rc}" opacity="0.22"/></g>')
-        rect_y = y + 120
-        svg.rect(x, rect_y, 306, 14, rc)
-        svg.text(x + 8, rect_y + 10.5, f"{i+1}  {region.upper()} \u00b7 {kicker}", SANS_B, 9, WHITE,
-                 weight="bold", what=f"lead kicker {i+1}")
-        assert tw(f"{i+1}  {region.upper()} \u00b7 {kicker}", SANS_B, 8.6) <= 298, f"lead kicker {i+1}"
-        lines = wrap(head, SERIF_B, 23, 300, 3, f"lead head {i+1}")
-        for k, ln in enumerate(lines):
-            svg.serif(x, rect_y + 33 + k * 24, ln, 23, box=300, what=f"lead head {i+1}")
-        dl = wrap(deck, SERIF, 9.0, 300, 2, f"lead deck {i+1}")
-        src = LEAD_SOURCE[i]
-        check(src, SANS, 9, 306, f"lead source {i+1}")
-        # Every lead reserves space for a 3-line head and a 2-line deck so the
-        # deck and source baselines stay aligned across all three columns.
-        deck_top = rect_y + 33 + 2 * 24 + 10
-        source_y = deck_top + 11.5 + 13
-        for k, ln in enumerate(dl):
-            svg.serif(x, deck_top + k * 11.5, ln, 9.0, DECK, weight=False, what=f"lead deck {i+1}", box=300)
-        svg.text(x, source_y, src, SANS, 9, GREY, what=f"lead source {i+1}")
+    # One dominant lead. Its picture fills the full band height; the caption
+    # names both place and subject, while the story copy occupies the right.
+    x, y = lead_geo[0]
+    region, field, kicker, head, deck, scene = LEADS[0]
+    rc = REGION_COL[region]
+    band_lead(svg, x, y, 400, 220, 0)
+    svg.raw(f'<g clip-path="url(#lead_clip0)"><rect x="{x}" y="{y}" width="400" height="220" fill="{rc}" opacity="0.16"/></g>')
+    svg.rect(x, y + 198, 400, 22, rc)
+    caption = "SHENZHEN  \u00b7  THREE-WAY SUMMIT"
+    check(caption, SANS_B, 10, 384, "lead caption")
+    svg.text(x + 8, y + 213, caption, SANS_B, 10, WHITE, weight="bold", what="lead caption")
+    tx, copy_w = 460, 524
+    text_box(tx, copy_w, "lead copy")
+    svg.text(tx, y + 15, "1  ASIA \u00b7 DIPLOMACY", SANS_B, 10, ACC, weight="bold", what="lead kicker")
+    lead_size = 44
+    HEADLINE_SIZES.append((lead_size, "lead headline"))
+    lines = wrap(head, SERIF_B, lead_size, copy_w, 3, "lead headline")
+    for k, ln in enumerate(lines):
+        svg.serif(tx, y + 58 + k * 48, ln, lead_size, box=copy_w, what="lead headline")
+    dl = wrap(deck, SERIF, 13, copy_w, 2, "lead deck")
+    assert len(dl) == 2, f"lead deck must be two lines: {dl}"
+    for k, ln in enumerate(dl):
+        svg.serif(tx, y + 174 + k * 16, ln, 13, DECK, weight=False, what="lead deck", box=copy_w)
+    credit = "Illustration: staff  \u00b7  Reporting: Reuters, AP"
+    check(credit, SANS, 9, copy_w, "lead credit")
+    svg.text(tx, y + 213, credit, SANS, 9, GREY, what="lead credit")
 
-    # Cards
+    # The two former co-leads remain in the story set as subordinate cards.
+    news_cards = [(r, f, k, h, s, "lead") for r, f, k, h, d, s in LEADS[1:]] + [
+        (r, f, k, h, s, "card") for r, f, k, h, s in CARDS]
     for i, (x, y) in enumerate(cards_geo):
-        region, field, kicker, head, scene = CARDS[i]
+        region, field, kicker, head, scene, kind = news_cards[i]
         rc = REGION_COL[region]
-        card_scene(svg, x, y, 180, 58, i)
-        svg.raw(f'<g clip-path="url(#card_clip{i})"><rect x="{x}" y="{y}" width="180" height="58" fill="{rc}" opacity="0.26"/></g>')
-        svg.rect(x, y + 62, 180, 13, rc)
-        check(f"{region.upper()} \u00b7 {kicker}", SANS_B, 9, 174, f"card kicker {i+1}")
-        svg.text(x + 4, y + 72, f"{region.upper()} \u00b7 {kicker}", SANS_B, 9, WHITE,
-                 weight="bold", what=f"card kicker {i+1}")
-        lines = wrap(head, SERIF_B, 12, 176, 2, f"card head {i+4}")
+        if kind == "card":
+            card_scene(svg, x, y, card_w, 58, i - 2, i)
+        else:
+            svg.raw(f'<g clip-path="url(#card_clip{i})">')
+            svg.rect(x, y, card_w, 58, "#ece5d6")
+            if scene == 1:
+                svg.rect(x, y, card_w, 58, "#2f3a52")
+                svg.circle(x + card_w - 26, y + 23, 16, PAPER)
+                svg.line(x + card_w - 26, y + 23, x + card_w - 26, y + 13, INK, 2)
+                svg.line(x + card_w - 26, y + 23, x + card_w - 18, y + 23, INK, 2)
+                svg.path(f"M{x+12} {y+35} L{x+62} {y+35} L{x+56} {y+48} L{x+18} {y+48} Z", WHITE)
+            else:
+                svg.rect(x, y + 42, card_w, 16, rc)
+                svg.path(f"M{x+6} {y+48} L{x+30} {y+39} L{x+54} {y+42} L{x+80} {y+24} L{x+104} {y+28} L{x+136} {y+9}", "", rc, 2.4)
+            svg.raw('</g>')
+        svg.raw(f'<g clip-path="url(#card_clip{i})"><rect x="{x}" y="{y}" width="{card_w:.2f}" height="58" fill="{rc}" opacity="0.20"/></g>')
+        svg.rect(x, y + 62, card_w, 13, rc)
+        kicker_text = f"{region.upper()} \u00b7 {kicker}"
+        kicker_size = 8 if tw(kicker_text, SANS_B, 8.5) > card_w - 8 else 8.5
+        check(kicker_text, SANS_B, kicker_size, card_w - 8, f"card kicker {i+2}")
+        svg.text(x + 4, y + 72, f"{region.upper()} \u00b7 {kicker}", SANS_B, kicker_size, WHITE,
+                 weight="bold", what=f"card kicker {i+2}")
+        head_size = 10.5
+        HEADLINE_SIZES.append((head_size, f"headline {i+2}"))
+        text_box(x, card_w, f"card {i+2} headline")
+        lines = wrap(head, SERIF_B, head_size, card_w, 3, f"card head {i+2}")
         for k, ln in enumerate(lines):
-            svg.serif(x, y + 90 + k * 13, ln, 11.5, box=176, what=f"card head {i+4}")
+            svg.serif(x, y + 89 + k * 11, ln, head_size, box=card_w, what=f"card head {i+2}")
 
     # Map and date check
     my, mh = 620, 100
@@ -647,8 +680,12 @@ def build():
             lines = wrap(text, SANS, BRIEF_MEASURE, 297 - px0, 2, f"brief {i+14} body")
             fit[i] = len(lines) - 1
     extra_rows = sum(fit[(rows - 1) - k] for k in range(rows))
-    pitch = 13.6
+    # A full blank text line between items breaks up the formerly continuous
+    # texture. Rules separate the three reading columns.
+    pitch = 18
     assert extra_rows == 0, "briefs must each stay on one line at the fixed pitch"
+    svg.line(351.5, 752, 351.5, 944, RULE, 0.8)
+    svg.line(674.5, 752, 674.5, 944, RULE, 0.8)
     for i, (region, field, place, text) in enumerate(b[0:4] for b in BRIEFS):
         col, row = divmod(i, rows)
         x = col_x[col]
@@ -677,7 +714,7 @@ def build():
 
     # No editor note: the briefs end where they did before the box existed,
     # and the footer hairline sits directly beneath the last brief row.
-    hy0 = 918
+    hy0 = 950
     assert last < hy0 - 4, f"briefs collide with footer rule: {last}"
     svg.hair(hy0, 10, W - 10)
     fy = hy0 + 12
@@ -689,6 +726,10 @@ def build():
     assert fy + (len(fl) - 1) * 10 + 2 <= H, "footer clipped"
 
     svg.raw('</svg>')
+    assert TEXT_BOXES, "text-box audit did not run"
+    assert all(edge <= right + 1e-9 for edge, right, _ in TEXT_BOXES), TEXT_BOXES
+    ordered_heads = sorted(HEADLINE_SIZES, reverse=True)
+    assert ordered_heads[0][0] / ordered_heads[1][0] >= 1.15, ordered_heads[:2]
     return "\n".join(svg.parts)
 
 
@@ -696,11 +737,14 @@ def main():
     out = Path(sys.argv[1] if len(sys.argv) > 1 else "entry.png")
     xml = build()
     assert "..." not in xml and "\u2026" not in xml, "ellipsis in output"
+    assert not any("…" in part or "..." in part for part in xml.splitlines()), "truncated text"
     worst = max(WORST)
     ratios = sorted(WORST, reverse=True)[:6]
     for r, what in ratios:
         print(f"ratio {r:.4f}  {what}")
     print(f"WORST {worst[0]:.4f}  {worst[1]}")
+    ordered_heads = sorted(HEADLINE_SIZES, reverse=True)
+    print(f"HEADLINE RATIO {ordered_heads[0][0] / ordered_heads[1][0]:.4f} ({ordered_heads[0][0]} / {ordered_heads[1][0]})")
     with tempfile.NamedTemporaryFile("w", suffix=".svg", delete=False) as fh:
         fh.write(xml)
         tmp = fh.name

@@ -16,16 +16,16 @@ from PIL import ImageFont
 W = H = 1024
 PAPER = "#F7F4EE"
 INK = "#141414"
-ACC = "#7a1f1f"
-GREY = "#7d7668"
+ACC = "#B22222"
+GREY = "#716B61"
 DECK = "#333333"
 RULE = "#C9C2B4"
-WHITE = "#ffffff"
+WHITE = "#F7F4EE"
 
 REGION_COL = {
-    "Europe": "#2f5d8a", "Middle East": "#8a3a2f", "Asia": "#b07a1e",
-    "Americas": "#4a6b3a", "Africa": "#7a4a6b", "Oceania": "#2f6b6b",
-    "Global": "#4a4a55",
+    "Europe": "#526B7E", "Middle East": "#7A4C43", "Asia": "#927442",
+    "Americas": "#5F7053", "Africa": "#745C6B", "Oceania": "#527170",
+    "Global": "#626169",
 }
 SERIF = "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"
 SERIF_B = "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf"
@@ -561,7 +561,7 @@ def build():
         svg.raw(f'<g clip-path="url(#lead_clip{i})"><rect x="{x}" y="{y}" width="306" height="120" fill="{rc}" opacity="0.22"/></g>')
         rect_y = y + 120
         svg.rect(x, rect_y, 306, 14, rc)
-        svg.text(x + 8, rect_y + 10.5, f"{i+1}  {region.upper()} \u00b7 {kicker}", SANS_B, 8.6, WHITE,
+        svg.text(x + 8, rect_y + 10.5, f"{i+1}  {region.upper()} \u00b7 {kicker}", SANS_B, 9, WHITE,
                  weight="bold", what=f"lead kicker {i+1}")
         assert tw(f"{i+1}  {region.upper()} \u00b7 {kicker}", SANS_B, 8.6) <= 298, f"lead kicker {i+1}"
         lines = wrap(head, SERIF_B, 23, 300, 3, f"lead head {i+1}")
@@ -569,14 +569,14 @@ def build():
             svg.serif(x, rect_y + 33 + k * 24, ln, 23, box=300, what=f"lead head {i+1}")
         dl = wrap(deck, SERIF, 9.0, 300, 2, f"lead deck {i+1}")
         src = LEAD_SOURCE[i]
-        check(src, SANS, 8.2, 306, f"lead source {i+1}")
+        check(src, SANS, 9, 306, f"lead source {i+1}")
         # Every lead reserves space for a 3-line head and a 2-line deck so the
         # deck and source baselines stay aligned across all three columns.
         deck_top = rect_y + 33 + 2 * 24 + 10
         source_y = deck_top + 11.5 + 13
         for k, ln in enumerate(dl):
             svg.serif(x, deck_top + k * 11.5, ln, 9.0, DECK, weight=False, what=f"lead deck {i+1}", box=300)
-        svg.text(x, source_y, src, SANS, 8.2, GREY, what=f"lead source {i+1}")
+        svg.text(x, source_y, src, SANS, 9, GREY, what=f"lead source {i+1}")
 
     # Cards
     for i, (x, y) in enumerate(cards_geo):
@@ -585,8 +585,8 @@ def build():
         card_scene(svg, x, y, 180, 58, i)
         svg.raw(f'<g clip-path="url(#card_clip{i})"><rect x="{x}" y="{y}" width="180" height="58" fill="{rc}" opacity="0.26"/></g>')
         svg.rect(x, y + 62, 180, 13, rc)
-        check(f"{region.upper()} \u00b7 {kicker}", SANS_B, 8.0, 174, f"card kicker {i+1}")
-        svg.text(x + 4, y + 72, f"{region.upper()} \u00b7 {kicker}", SANS_B, 8.0, WHITE,
+        check(f"{region.upper()} \u00b7 {kicker}", SANS_B, 9, 174, f"card kicker {i+1}")
+        svg.text(x + 4, y + 72, f"{region.upper()} \u00b7 {kicker}", SANS_B, 9, WHITE,
                  weight="bold", what=f"card kicker {i+1}")
         lines = wrap(head, SERIF_B, 12, 176, 2, f"card head {i+4}")
         for k, ln in enumerate(lines):
@@ -606,44 +606,45 @@ def build():
         assert lines[gy][gx] == "#"
         cx, cy = 40 + gx * 10 / 3 + 1.67, my + gy * 100 / 45 + 1.1
         svg.circle(cx, cy, 5.2, REGION_COL[reg], f'stroke="{PAPER}" stroke-width="1"')
-        svg.text(cx, cy + 2.9, str(k), SANS_B, 6.6, WHITE, anchor="middle", weight="bold", what=f"pin {k}")
+        svg.text(cx, cy + 2.9, str(k), SANS_B, 9, WHITE, anchor="middle", weight="bold", what=f"pin {k}")
     svg.raw('</g>')
-    svg.text(40, 738 - 10, "13 ILLUSTRATED \u00b7 1-13 LEADS AND CARDS \u00b7 PIN COLOUR = REGION", SANS, 7.4, GREY, what="map note")
+    svg.text(40, 738 - 10, "13 ILLUSTRATED \u00b7 1-13 LEADS AND CARDS \u00b7 PIN COLOUR = REGION", SANS, 9, GREY, what="map note")
 
     # Date check
     bx, by, bw, bh = 356, 620, 628, 100
     svg.rect(bx, by, 3, bh, ACC)
     svg.rect(bx + 12, by + 12, bw - 24, bh - 24, PAPER, f'stroke="{RULE}" stroke-width="1"')
-    dlines = wrap(DATE_CHECK, SANS, 8.6, 592, 3, "date check")
+    dlines = wrap(DATE_CHECK, SANS, 9, 530, 3, "date check")
     for k, ln in enumerate(dlines):
         if k == 0:
-            svg.text(bx + 22, by + 31, "DATE CHECK", SANS_B, 8.6, ACC, weight="bold", what="date check label")
+            svg.text(bx + 22, by + 31, "DATE CHECK", SANS_B, 9, ACC, weight="bold", what="date check label")
             rest = ln[len("DATE CHECK"):].lstrip()
             gap = 4
-            x0 = bx + 22 + tw("DATE CHECK", SANS_B, 8.6) + gap
-            check(rest, SANS, 8.6, bx + bw - 24 - x0, "date check rest")
-            svg.text(x0, by + 31, rest, SANS, 8.6, INK, what="date check rest")
+            x0 = bx + 22 + tw("DATE CHECK", SANS_B, 9) + gap
+            check(rest, SANS, 9, bx + bw - 24 - x0, "date check rest")
+            svg.text(x0, by + 31, rest, SANS, 9, INK, what="date check rest")
         else:
-            svg.text(bx + 22, by + 31 + k * 13, ln, SANS, 8.6, INK, what="date check")
+            svg.text(bx + 22, by + 31 + k * 13, ln, SANS, 9, INK, what="date check")
 
     # Briefs header
     fieldline = "BY FIELD  " + " \u00b7 ".join(f"{f} {FIELD_COUNT[f]}" for f in FIELDS)
-    check(fieldline, SANS_B, 7.4, 760, "field counts")
+    check(fieldline, SANS_B, 9, tw(fieldline, SANS_B, 9), "field counts")
     svg.text(40, 738, "BRIEFS 14-45", SERIF_B, 15, INK, what="briefs header")
-    svg.text(984, 738 - 3, fieldline, SANS_B, 7.4, INK, anchor="end", weight="bold", what="field counts")
+    svg.raw(f'<text x="984" y="735" font-family="DejaVu Sans" font-size="9" font-weight="bold" fill="{INK}" text-anchor="end" textLength="760" lengthAdjust="spacingAndGlyphs">{esc(fieldline)}</text>')
     svg.hair(746)
 
-    BRIEF_SIZE = 8.2
+    BRIEF_SIZE = 9
+    BRIEF_MEASURE = 8.2
     col_x = [40, 363, 686]
     y0 = 760
     rows = 11
     fit = [0] * len(BRIEFS)
     for i, (region, field, place, text) in enumerate(b[0:4] for b in BRIEFS):
         px0 = 16
-        sw0 = tw(place, SANS_B, BRIEF_SIZE)
+        sw0 = tw(place, SANS_B, BRIEF_MEASURE)
         room0 = 297 - (px0 + sw0 + 3)
-        if tw(text, SANS, BRIEF_SIZE) > room0:
-            lines = wrap(text, SANS, BRIEF_SIZE, 297 - px0, 2, f"brief {i+14} body")
+        if tw(text, SANS, BRIEF_MEASURE) > room0:
+            lines = wrap(text, SANS, BRIEF_MEASURE, 297 - px0, 2, f"brief {i+14} body")
             fit[i] = len(lines) - 1
     extra_rows = sum(fit[(rows - 1) - k] for k in range(rows))
     pitch = 13.6
@@ -656,22 +657,22 @@ def build():
             y += sum(fit[(rows - 1) - k] for k in range(row)) * 7.5
         svg.rect(x - 5, y - 7.6, 2.4, 9.2, REGION_COL[region])
         num = f"{i + 14}"
-        check(num, SANS_B, BRIEF_SIZE, 14, "brief num")
-        svg.text(x, y, num, SANS_B, BRIEF_SIZE, ACC, weight="bold", what="brief num")
+        check(num, SANS_B, BRIEF_MEASURE, 14, "brief num")
+        svg.text(x, y, num, SANS_B, BRIEF_SIZE, ACC, weight="bold", ls=-0.7, what="brief num")
         px = x + 16
-        sw = tw(place, SANS_B, BRIEF_SIZE)
-        check(place + " ", SANS_B, BRIEF_SIZE, 297 - 16, f"brief {num} place")
-        svg.text(px, y, place, SANS_B, BRIEF_SIZE, INK, weight="bold", what=f"brief {num} place")
+        sw = tw(place, SANS_B, BRIEF_MEASURE)
+        check(place + " ", SANS_B, BRIEF_MEASURE, 297 - 16, f"brief {num} place")
+        svg.text(px, y, place, SANS_B, BRIEF_SIZE, INK, weight="bold", ls=-0.7, what=f"brief {num} place")
         tx = px + sw + 3
         room = x + 297 - tx
         if fit[i]:
-            lines = wrap(text, SANS, BRIEF_SIZE, 297 - 16, 2, f"brief {num} body")
+            lines = wrap(text, SANS, BRIEF_MEASURE, 297 - 16, 2, f"brief {num} body")
             for k, ln in enumerate(lines):
-                check(ln, SANS, BRIEF_SIZE, 297 - 16, f"brief {num} body")
-                svg.text(px, y + 7.5 + k * 7.5, ln, SANS, BRIEF_SIZE, INK, what=f"brief {num} body")
+                check(ln, SANS, BRIEF_MEASURE, 297 - 16, f"brief {num} body")
+                svg.text(px, y + 7.5 + k * 7.5, ln, SANS, BRIEF_SIZE, INK, ls=-0.7, what=f"brief {num} body")
         else:
-            check(text, SANS, BRIEF_SIZE, room, f"brief {num} body")
-            svg.text(tx, y, text, SANS, BRIEF_SIZE, INK, what=f"brief {num} body")
+            check(text, SANS, BRIEF_MEASURE, room, f"brief {num} body")
+            svg.text(tx, y, text, SANS, BRIEF_SIZE, INK, ls=-0.7, what=f"brief {num} body")
     last = y0 + (rows - 1) * pitch + extra_rows * 7.5
 
     # No editor note: the briefs end where they did before the box existed,
@@ -680,11 +681,11 @@ def build():
     assert last < hy0 - 4, f"briefs collide with footer rule: {last}"
     svg.hair(hy0, 10, W - 10)
     fy = hy0 + 12
-    fl = wrap(FOOT_L, SANS, 8.4, 700, 2, "footer left")
+    fl = wrap(FOOT_L, SANS, 9, 700, 2, "footer left")
     for k, ln in enumerate(fl):
-        svg.text(10, fy + k * 10, ln, SANS, 8.4, INK, what="footer left")
-    check("19 NOVEMBER 2026", SANS_B, 8.4, 200, "footer right")
-    svg.text(1012, fy, "19 NOVEMBER 2026", SANS_B, 8.4, INK, anchor="end", weight="bold", what="footer right")
+        svg.text(10, fy + k * 10, ln, SANS, 9, INK, what="footer left")
+    check("19 NOVEMBER 2026", SANS_B, 9, 200, "footer right")
+    svg.text(1012, fy, "19 NOVEMBER 2026", SANS_B, 9, INK, anchor="end", weight="bold", what="footer right")
     assert fy + (len(fl) - 1) * 10 + 2 <= H, "footer clipped"
 
     svg.raw('</svg>')
